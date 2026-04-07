@@ -1,0 +1,5 @@
+# Technical Research Agent — Python dependencies
+# Requires Python 3.11+
+
+claude-agent-sdk    # Claude Agent SDK (WebSearch, WebFetch, Write, Read built-in tools)
+anyio               # Async runtime (installed transitively, pinned for clarity)
