@@ -5,6 +5,7 @@ Porta 8002 — interfaccia web in italiano.
 """
 
 import json
+import re
 from pathlib import Path
 
 import httpx
@@ -13,6 +14,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from qdrant_client import QdrantClient
+from qdrant_client.models import FieldCondition, Filter, MatchAny
 
 # ---------------------------------------------------------------------------
 # Configurazione
@@ -37,6 +39,43 @@ qdrant    = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
 # Utilità
 # ---------------------------------------------------------------------------
 
+_STOPWORDS = {
+    "come", "cosa", "quando", "dove", "quali", "quale", "quanto", "quanti",
+    "sono", "siamo", "siete", "hanno", "avere", "essere", "fare", "vuoi",
+    "voglio", "vorrei", "puoi", "posso", "devo", "deve", "questo", "questa",
+    "questi", "queste", "quello", "quella", "tutto", "tutti", "altra", "altro",
+    "informazioni", "dimmi", "spiegami", "descrivimi", "elenca", "modo",
+    "the", "and", "for", "with", "that", "this", "from", "what", "how",
+}
+
+
+def _query_keywords(query: str) -> list[str]:
+    """Parole significative (≥4 car., non stopword) dalla domanda."""
+    words = re.findall(r'\b[a-zA-Z0-9àèéìòùÀÈÉÌÒÙ]+\b', query.lower())
+    return [w for w in words if len(w) >= 4 and w not in _STOPWORDS]
+
+
+def _sources_for_keyword(keyword: str) -> list[str]:
+    """Nomi di file (campo sorgente) che contengono la parola chiave."""
+    found: set[str] = set()
+    offset = None
+    while True:
+        records, offset = qdrant.scroll(
+            collection_name=COLLECTION,
+            limit=200,
+            offset=offset,
+            with_payload=["sorgente"],
+            with_vectors=False,
+        )
+        for r in records:
+            name = r.payload.get("sorgente", "")
+            if keyword in name.lower():
+                found.add(name)
+        if offset is None:
+            break
+    return list(found)
+
+
 def get_embedding(text: str) -> list[float]:
     resp = httpx.post(
         f"{OLLAMA_BASE}/api/embeddings",
@@ -49,19 +88,44 @@ def get_embedding(text: str) -> list[float]:
 
 def search_docs(query: str) -> list[dict]:
     embedding = get_embedding(query)
-    response = qdrant.query_points(
+
+    # 1. Ricerca semantica su tutti i documenti
+    semantic = qdrant.query_points(
         collection_name=COLLECTION,
         query=embedding,
         limit=TOP_K,
         with_payload=True,
     )
+    merged = {h.id: h for h in semantic.points}
+
+    # 2. Keyword boost: aggiunge chunk dai file il cui nome contiene
+    #    parole significative della domanda (es. "facehub" → FaceHub*.pdf)
+    for kw in _query_keywords(query):
+        sources = _sources_for_keyword(kw)
+        if not sources:
+            continue
+        filtered = qdrant.query_points(
+            collection_name=COLLECTION,
+            query=embedding,
+            query_filter=Filter(
+                must=[FieldCondition(key="sorgente", match=MatchAny(any=sources))]
+            ),
+            limit=TOP_K,
+            with_payload=True,
+        )
+        for h in filtered.points:
+            if h.id not in merged:
+                merged[h.id] = h
+
+    # 3. Ordina per score, restituisce i migliori TOP_K
+    top = sorted(merged.values(), key=lambda h: h.score, reverse=True)[:TOP_K]
     return [
         {
             "testo":    h.payload["testo"],
             "sorgente": h.payload["sorgente"],
             "score":    round(h.score, 3),
         }
-        for h in response.points
+        for h in top
     ]
 
 
