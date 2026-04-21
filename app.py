@@ -49,9 +49,9 @@ def get_embedding(text: str) -> list[float]:
 
 def search_docs(query: str) -> list[dict]:
     embedding = get_embedding(query)
-    hits = qdrant.search(
+    response = qdrant.query_points(
         collection_name=COLLECTION,
-        query_vector=embedding,
+        query=embedding,
         limit=TOP_K,
         with_payload=True,
     )
@@ -61,7 +61,7 @@ def search_docs(query: str) -> list[dict]:
             "sorgente": h.payload["sorgente"],
             "score":    round(h.score, 3),
         }
-        for h in hits
+        for h in response.points
     ]
 
 
