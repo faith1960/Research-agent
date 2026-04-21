@@ -28,7 +28,7 @@ COLLECTION    = "cervello_federico"
 EMBED_MODEL   = "nomic-embed-text"
 DOCS_PATH     = Path("/Users/federico/cervello-federico/sorgenti")
 EMBED_DIM     = 768   # nomic-embed-text
-CHUNK_CHARS   = 500
+CHUNK_CHARS   = 300
 OVERLAP_CHARS = 50
 EXTENSIONS    = {".pdf", ".md", ".markdown", ".txt"}
 # ---------------------------------------------------------------------------
