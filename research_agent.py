@@ -156,7 +156,7 @@ def _truncate(text: str, max_chars: int = 120) -> str:
 # Core research routine
 # ---------------------------------------------------------------------------
 
-async def research_topic(topic: str, output_dir: Path, max_turns: int) -> Path:
+async def research_topic(topic: str, output_dir: Path, max_turns: int, verbose: bool = False) -> Path:
     """
     Launch the research agent for *topic*, stream progress to stdout,
     and return the path of the saved report.
@@ -234,8 +234,11 @@ Do not truncate any section. Write all 9 sections even if brief.
             turn += 1
             for block in message.content:
                 if isinstance(block, TextBlock) and block.text.strip():
-                    first_line = block.text.strip().splitlines()[0]
-                    print(f"  [{turn:02d}] {_truncate(first_line)}")
+                    if verbose:
+                        print(f"  [{turn:02d}] {block.text.strip()}")
+                    else:
+                        first_line = block.text.strip().splitlines()[0]
+                        print(f"  [{turn:02d}] {_truncate(first_line)}")
 
         elif isinstance(message, ResultMessage):
             print(f"\n{sep}")
@@ -304,13 +307,18 @@ Examples:
         metavar="N",
         help="Maximum agent turns / tool calls (default: 50)",
     )
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Print full agent output instead of a truncated single line per turn",
+    )
 
     args = parser.parse_args()
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     try:
-        anyio.run(research_topic, args.topic, output_dir, args.max_turns)
+        anyio.run(research_topic, args.topic, output_dir, args.max_turns, args.verbose)
     except KeyboardInterrupt:
         print("\n\nInterrupted by user.")
         sys.exit(1)
