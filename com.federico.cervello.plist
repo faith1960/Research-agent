@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd agent per Cervello Federico (macOS, NON systemd).
+
+  Installazione:
+    cp com.federico.cervello.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.federico.cervello.plist
+
+  Avvio / stop manuale:
+    launchctl start com.federico.cervello
+    launchctl stop  com.federico.cervello
+
+  Rimozione:
+    launchctl unload ~/Library/LaunchAgents/com.federico.cervello.plist
+
+  Log:
+    tail -f /Users/federico/cervello-federico/logs/cervello.log
+    tail -f /Users/federico/cervello-federico/logs/cervello-err.log
+-->
+<plist version="1.0">
+<dict>
+
+  <key>Label</key>
+  <string>com.federico.cervello</string>
+
+  <!-- Esegue avvia.sh che gestisce venv e dipendenze -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/federico/cervello-federico/avvia.sh</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/federico/cervello-federico</string>
+
+  <!-- Parte automaticamente al login e si riavvia se crasha -->
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/federico/cervello-federico/logs/cervello.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/federico/cervello-federico/logs/cervello-err.log</string>
+
+  <!-- PATH per trovare python3 homebrew su Apple Silicon -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+
+  <!-- Attende 5 secondi prima di riavviare in caso di crash -->
+  <key>ThrottleInterval</key>
+  <integer>5</integer>
+
+</dict>
+</plist>
