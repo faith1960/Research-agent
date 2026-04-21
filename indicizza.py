@@ -28,8 +28,8 @@ COLLECTION    = "cervello_federico"
 EMBED_MODEL   = "nomic-embed-text"
 DOCS_PATH     = Path("/Users/federico/cervello-federico/sorgenti")
 EMBED_DIM     = 768   # nomic-embed-text
-CHUNK_WORDS   = 500
-OVERLAP_WORDS = 50
+CHUNK_CHARS   = 500
+OVERLAP_CHARS = 50
 EXTENSIONS    = {".pdf", ".md", ".markdown", ".txt"}
 # ---------------------------------------------------------------------------
 
@@ -53,13 +53,12 @@ def extract_text(path: Path) -> str:
 
 
 def chunk_text(text: str) -> list[str]:
-    words = text.split()
     chunks, start = [], 0
-    while start < len(words):
-        chunk = " ".join(words[start : start + CHUNK_WORDS])
-        if len(chunk.strip()) > 80:
+    while start < len(text):
+        chunk = text[start : start + CHUNK_CHARS].strip()
+        if len(chunk) > 40:
             chunks.append(chunk)
-        start += CHUNK_WORDS - OVERLAP_WORDS
+        start += CHUNK_CHARS - OVERLAP_CHARS
     return chunks
 
 

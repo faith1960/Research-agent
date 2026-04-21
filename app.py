@@ -23,7 +23,7 @@ QDRANT_PORT = 6333
 COLLECTION  = "cervello_federico"
 EMBED_MODEL = "nomic-embed-text"
 LLM_MODEL   = "gemma3:4b"
-TOP_K       = 5
+TOP_K       = 8
 PORT        = 8002
 # ---------------------------------------------------------------------------
 
