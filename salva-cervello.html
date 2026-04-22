@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Salva nel Cervello</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #0f1117;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background-color: #1a1d27;
+      border: 1px solid #2a2d3a;
+      border-radius: 12px;
+      padding: 40px;
+      width: 100%;
+      max-width: 640px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: #6b7280;
+      margin-bottom: 32px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #9ca3af;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      background-color: #0f1117;
+      border: 1px solid #2a2d3a;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-size: 1rem;
+      font-family: inherit;
+      padding: 12px 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    input[type="text"] {
+      margin-bottom: 20px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 180px;
+      line-height: 1.6;
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    button {
+      margin-top: 28px;
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #ffffff;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 0.3px;
+    }
+
+    button:hover:not(:disabled) {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .messaggio {
+      display: none;
+      margin-top: 20px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .messaggio.successo {
+      background-color: #14532d;
+      border: 1px solid #16a34a;
+      color: #86efac;
+    }
+
+    .messaggio.errore {
+      background-color: #450a0a;
+      border: 1px solid #dc2626;
+      color: #fca5a5;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>🧠 Salva nel Cervello</h1>
+    <p class="subtitle">Aggiungi un nuovo documento alla tua base di conoscenza personale.</p>
+
+    <div class="field">
+      <label for="titolo">Titolo</label>
+      <input type="text" id="titolo" placeholder="Es. Appunti riunione 22 aprile…" />
+    </div>
+
+    <div class="field">
+      <label for="testo">Testo</label>
+      <textarea id="testo" placeholder="Scrivi qui il contenuto da memorizzare…"></textarea>
+    </div>
+
+    <button id="btnSalva" onclick="salva()">Salva nel Cervello</button>
+
+    <div class="messaggio" id="messaggio"></div>
+  </div>
+
+  <script>
+    async function salva() {
+      const titolo = document.getElementById('titolo').value.trim();
+      const testo  = document.getElementById('testo').value.trim();
+      const btn    = document.getElementById('btnSalva');
+      const msg    = document.getElementById('messaggio');
+
+      msg.style.display = 'none';
+      msg.className = 'messaggio';
+
+      if (!titolo || !testo) {
+        msg.textContent = '⚠️ Inserisci sia il titolo che il testo prima di salvare.';
+        msg.classList.add('errore');
+        msg.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Salvataggio in corso…';
+
+      try {
+        const risposta = await fetch('http://192.168.178.150:5678/webhook/salva-cervello', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ titolo, testo })
+        });
+
+        if (risposta.ok) {
+          msg.textContent = '✅ Documento salvato con successo nel cervello!';
+          msg.classList.add('successo');
+          document.getElementById('titolo').value = '';
+          document.getElementById('testo').value  = '';
+        } else {
+          msg.textContent = `❌ Errore dal server: ${risposta.status} ${risposta.statusText}`;
+          msg.classList.add('errore');
+        }
+      } catch (err) {
+        msg.textContent = '❌ Impossibile raggiungere il server. Controlla la connessione di rete.';
+        msg.classList.add('errore');
+      } finally {
+        msg.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Salva nel Cervello';
+      }
+    }
+  </script>
+
+</body>
+</html>
