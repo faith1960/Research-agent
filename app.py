@@ -152,6 +152,11 @@ async def index(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
 
+@app.get("/salva", response_class=HTMLResponse)
+async def salva(request: Request):
+    return templates.TemplateResponse(request=request, name="salva-cervello.html")
+
+
 @app.get("/stato")
 async def stato():
     try:
