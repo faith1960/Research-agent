@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Salva nel Cervello</title>
+  <title>Aggiungi al Cervello</title>
   <style>
     *, *::before, *::after {
       box-sizing: border-box;
@@ -28,7 +28,7 @@
       border-radius: 12px;
       padding: 40px;
       width: 100%;
-      max-width: 640px;
+      max-width: 560px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     }
 
@@ -56,8 +56,15 @@
       letter-spacing: 0.6px;
     }
 
-    input[type="text"],
-    textarea {
+    .percorso-base {
+      font-size: 0.78rem;
+      color: #4b5563;
+      margin-bottom: 8px;
+      word-break: break-all;
+      font-family: monospace;
+    }
+
+    input[type="text"] {
       width: 100%;
       background-color: #0f1117;
       border: 1px solid #2a2d3a;
@@ -70,24 +77,9 @@
       outline: none;
     }
 
-    input[type="text"]:focus,
-    textarea:focus {
+    input[type="text"]:focus {
       border-color: #6366f1;
       box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-    }
-
-    input[type="text"] {
-      margin-bottom: 20px;
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 180px;
-      line-height: 1.6;
-    }
-
-    .field {
-      margin-bottom: 20px;
     }
 
     button {
@@ -161,56 +153,51 @@
 <body>
 
   <div class="card">
-    <h1>🧠 Salva nel Cervello</h1>
-    <p class="subtitle">Aggiungi un nuovo documento alla tua base di conoscenza personale.</p>
+    <h1>🧠 Aggiungi al Cervello</h1>
+    <p class="subtitle">Indica il nome del file da aggiungere alla tua base di conoscenza.</p>
 
-    <div class="field">
-      <label for="titolo">Titolo</label>
-      <input type="text" id="titolo" placeholder="Es. Appunti riunione 22 aprile…" />
-    </div>
+    <label for="nomefile">Nome file</label>
+    <p class="percorso-base">/Users/federicopioppi/Library/Mobile Documents/comappleCloudDocs/</p>
+    <input type="text" id="nomefile" placeholder="Es. Sessione-22-Aprile.md" />
 
-    <div class="field">
-      <label for="testo">Testo</label>
-      <textarea id="testo" placeholder="Scrivi qui il contenuto da memorizzare…"></textarea>
-    </div>
-
-    <button id="btnSalva" onclick="salva()">Salva nel Cervello</button>
+    <button id="btnAggiungi" onclick="aggiungi()">Aggiungi al Cervello</button>
 
     <div class="messaggio" id="messaggio"></div>
   </div>
 
   <script>
-    async function salva() {
-      const titolo = document.getElementById('titolo').value.trim();
-      const testo  = document.getElementById('testo').value.trim();
-      const btn    = document.getElementById('btnSalva');
-      const msg    = document.getElementById('messaggio');
+    const PERCORSO_BASE = '/Users/federicopioppi/Library/Mobile Documents/comappleCloudDocs/';
+    const WEBHOOK = 'http://192.168.178.150:5678/webhook/salva-cervello';
+
+    async function aggiungi() {
+      const nomefile = document.getElementById('nomefile').value.trim();
+      const btn = document.getElementById('btnAggiungi');
+      const msg = document.getElementById('messaggio');
 
       msg.style.display = 'none';
       msg.className = 'messaggio';
 
-      if (!titolo || !testo) {
-        msg.textContent = '⚠️ Inserisci sia il titolo che il testo prima di salvare.';
+      if (!nomefile) {
+        msg.textContent = '⚠️ Inserisci il nome del file prima di continuare.';
         msg.classList.add('errore');
         msg.style.display = 'block';
         return;
       }
 
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span>Salvataggio in corso…';
+      btn.innerHTML = '<span class="spinner"></span>Invio in corso…';
 
       try {
-        const risposta = await fetch('http://192.168.178.150:5678/webhook/salva-cervello', {
+        const risposta = await fetch(WEBHOOK, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ titolo, testo })
+          body: JSON.stringify({ percorso: PERCORSO_BASE + nomefile })
         });
 
         if (risposta.ok) {
-          msg.textContent = '✅ Documento salvato con successo nel cervello!';
+          msg.textContent = '✅ File aggiunto al cervello con successo!';
           msg.classList.add('successo');
-          document.getElementById('titolo').value = '';
-          document.getElementById('testo').value  = '';
+          document.getElementById('nomefile').value = '';
         } else {
           msg.textContent = `❌ Errore dal server: ${risposta.status} ${risposta.statusText}`;
           msg.classList.add('errore');
@@ -221,7 +208,7 @@
       } finally {
         msg.style.display = 'block';
         btn.disabled = false;
-        btn.textContent = 'Salva nel Cervello';
+        btn.textContent = 'Aggiungi al Cervello';
       }
     }
   </script>
