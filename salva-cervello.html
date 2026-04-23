@@ -191,7 +191,7 @@
         const risposta = await fetch(WEBHOOK, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ percorso: PERCORSO_BASE + nomefile })
+          body: JSON.stringify({ nomeFile: nomefile })
         });
 
         if (risposta.ok) {
