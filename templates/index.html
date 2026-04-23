@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cervello Federico</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --border:    #2a2d3e;
+      --accent:    #6c8ebf;
+      --accent-hi: #8fafd9;
+      --text:      #e2e8f0;
+      --muted:     #8892a4;
+      --green:     #4ade80;
+      --red:       #f87171;
+      --tag-bg:    #1e2a3a;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 1.4rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+    header h1 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--accent-hi);
+    }
+    header .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+    }
+    header .dot.offline { background: var(--red); }
+
+    /* ── Main ── */
+    main {
+      flex: 1;
+      max-width: 860px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.8rem;
+    }
+
+    /* ── Input area ── */
+    .input-area {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    textarea {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 1rem;
+      padding: 0.85rem 1rem;
+      resize: vertical;
+      min-height: 80px;
+      outline: none;
+      transition: border-color 0.15s;
+      font-family: inherit;
+    }
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--muted); }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    button#invia {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.6rem 1.6rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    button#invia:hover { background: var(--accent-hi); }
+    button#invia:disabled { opacity: 0.5; cursor: not-allowed; }
+    button#pulisci {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    button#pulisci:hover { color: var(--text); border-color: var(--muted); }
+
+    .hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-left: auto;
+    }
+
+    /* ── Risposta ── */
+    #risposta-box {
+      display: none;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    #risposta-box.visibile { display: flex; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+    }
+    .card-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+
+    #testo-risposta {
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.75;
+    }
+    #testo-risposta.streaming::after {
+      content: "▌";
+      animation: blink 0.8s step-end infinite;
+      color: var(--accent);
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ── Sorgenti ── */
+    #sorgenti-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .tag {
+      background: var(--tag-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.2rem 0.65rem;
+      font-size: 0.78rem;
+      color: var(--accent-hi);
+      font-family: "SFMono-Regular", Consolas, monospace;
+    }
+
+    /* ── Stato / errore ── */
+    #stato-msg {
+      font-size: 0.85rem;
+      color: var(--muted);
+      display: none;
+    }
+    #stato-msg.visibile { display: block; }
+    #stato-msg.errore { color: var(--red); }
+
+    /* ── Spinner ── */
+    .spinner {
+      display: none;
+      width: 16px; height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    .spinner.visibile { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="dot" id="status-dot"></div>
+  <h1>Cervello Federico</h1>
+</header>
+
+<main>
+  <div class="input-area">
+    <textarea id="domanda" placeholder="Chiedi qualcosa ai tuoi documenti…" rows="3"></textarea>
+    <div class="row">
+      <button id="invia">Chiedi</button>
+      <button id="pulisci">Pulisci</button>
+      <div class="spinner" id="spinner"></div>
+      <span id="stato-msg"></span>
+      <span class="hint" id="hint">Invio con Ctrl+Enter</span>
+    </div>
+  </div>
+
+  <div id="risposta-box">
+    <div class="card" id="card-sorgenti" style="display:none">
+      <div class="card-label">Fonti consultate</div>
+      <div id="sorgenti-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Risposta</div>
+      <div id="testo-risposta"></div>
+    </div>
+  </div>
+</main>
+
+<footer>Powered by Qdrant · nomic-embed-text · gemma3:4b</footer>
+
+<script>
+  const domandaEl   = document.getElementById("domanda");
+  const inviaBtn    = document.getElementById("invia");
+  const pulisciBtn  = document.getElementById("pulisci");
+  const spinner     = document.getElementById("spinner");
+  const statoMsg    = document.getElementById("stato-msg");
+  const rispostaBox = document.getElementById("risposta-box");
+  const testoEl     = document.getElementById("testo-risposta");
+  const sorgentiEl  = document.getElementById("sorgenti-list");
+  const cardSorg    = document.getElementById("card-sorgenti");
+  const statusDot   = document.getElementById("status-dot");
+
+  // Verifica stato al caricamento
+  fetch("/stato")
+    .then(r => r.json())
+    .then(d => {
+      if (!d.errore) {
+        statusDot.title = `${d.punti} punti · ${d.modello_llm}`;
+      } else {
+        statusDot.classList.add("offline");
+        statusDot.title = d.errore;
+      }
+    })
+    .catch(() => statusDot.classList.add("offline"));
+
+  function setLoading(on) {
+    inviaBtn.disabled = on;
+    spinner.classList.toggle("visibile", on);
+  }
+
+  function setStato(msg, isError = false) {
+    statoMsg.textContent = msg;
+    statoMsg.className   = "visibile" + (isError ? " errore" : "");
+  }
+
+  function reset() {
+    rispostaBox.classList.remove("visibile");
+    testoEl.textContent = "";
+    testoEl.classList.remove("streaming");
+    sorgentiEl.innerHTML = "";
+    cardSorg.style.display = "none";
+    statoMsg.className = "";
+    statoMsg.textContent = "";
+  }
+
+  async function chiedi() {
+    const domanda = domandaEl.value.trim();
+    if (!domanda) return;
+
+    reset();
+    setLoading(true);
+    setStato("Ricerca in corso…");
+    rispostaBox.classList.add("visibile");
+    testoEl.classList.add("streaming");
+
+    try {
+      const resp = await fetch("/domanda", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ domanda }),
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json();
+        setStato(err.errore || "Errore nella richiesta", true);
+        setLoading(false);
+        return;
+      }
+
+      const reader  = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer    = "";
+
+      statoMsg.className = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop(); // keep incomplete line
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          let event;
+          try { event = JSON.parse(line.slice(6)); }
+          catch { continue; }
+
+          if (event.tipo === "sorgenti") {
+            sorgentiEl.innerHTML = event.sorgenti
+              .map(s => `<span class="tag">${escHtml(s)}</span>`)
+              .join("");
+            cardSorg.style.display = "";
+
+          } else if (event.tipo === "token") {
+            testoEl.textContent += event.contenuto;
+
+          } else if (event.tipo === "fine") {
+            testoEl.classList.remove("streaming");
+
+          } else if (event.tipo === "errore") {
+            setStato(event.messaggio, true);
+            testoEl.classList.remove("streaming");
+          }
+        }
+      }
+    } catch (err) {
+      setStato("Connessione al backend fallita: " + err.message, true);
+      testoEl.classList.remove("streaming");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  inviaBtn.addEventListener("click", chiedi);
+  pulisciBtn.addEventListener("click", () => {
+    domandaEl.value = "";
+    reset();
+    domandaEl.focus();
+  });
+  domandaEl.addEventListener("keydown", e => {
+    if (e.key === "Enter" && e.ctrlKey) { e.preventDefault(); chiedi(); }
+  });
+</script>
+</body>
+</html>
